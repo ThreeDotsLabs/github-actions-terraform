@@ -1,4 +1,4 @@
-name: master
+name: master-environments
 on:
   workflow_dispatch:
   push:
@@ -6,8 +6,7 @@ on:
       - master
 
 jobs:
-  apply:
-    environment: production
+  plan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,11 +32,39 @@ jobs:
         run: terraform validate -no-color | tee validation
 
       - id: plan
-        run: terraform plan -out=out.tfplan -no-color -input=false 2> plan_errors
+        run: terraform plan -out=out.tfplan -no-color -input=false
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.TERRAFORM_GITHUB_TOKEN }}
           GOOGLE_APPLICATION_CREDENTIALS: credentials.json
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: out.tfplan
+        path: out.tfplan
+
+  apply:
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+          terraform_wrapper: false
+
+      - run: echo -n "$CREDENTIALS" > credentials.json
+        env:
+          CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+
+      - id: init
+        run: terraform init
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: credentials.json
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: out.tfplan
 
       - name: Apply
         run: terraform apply out.tfplan
