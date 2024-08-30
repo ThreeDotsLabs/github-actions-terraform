@@ -47,11 +47,10 @@ jobs:
       - id: output
         run: |
           {
-            echo 'PLAN_OUTPUT<<EOF'
+            echo "# Plan to be applied"
             echo '```'
             sed '1d' output
             echo '```'
-            echo EOF
           } >> "$GITHUB_STEP_SUMMARY"
 
   apply:
