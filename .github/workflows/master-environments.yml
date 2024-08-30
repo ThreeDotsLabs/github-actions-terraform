@@ -39,6 +39,21 @@ jobs:
           name: out.tfplan
           path: out.tfplan
 
+      - run: |
+          TMP_OUTPUT=$(terraform show -no-color out.tfplan)
+          FORMATTED_OUTPUT="${TMP_OUTPUT:0:65536}"
+          echo "$FORMATTED_OUTPUT" | tee output
+
+      - id: output
+        run: |
+          {
+            echo 'PLAN_OUTPUT<<EOF'
+            echo '```'
+            sed '1d' output
+            echo '```'
+            echo EOF
+          } >> "$GITHUB_STEP_SUMMARY"
+
   apply:
     needs: plan
     environment: production
